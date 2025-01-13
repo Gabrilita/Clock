@@ -5,18 +5,20 @@
 #include <RTClib.h>
 
 #define SCREEN_WIDTH 128
-#define SCREEN_HEIGHT 32
+#define SCREEN_HEIGHT 64
 #define OLED_RESET    -1
 #define SCREEN_ADDRESS 0x3C
-Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 
 #define DHTPIN 2
 #define DHTTYPE DHT22
+
+#define BUTTON_PIN 3
+
+Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 DHT dht(DHTPIN, DHTTYPE);
 
 RTC_DS1307 rtc;
 
-#define BUTTON_PIN 3
 bool buttonPressed = false;
 bool lastButtonState = HIGH;
 unsigned long buttonPressTime = 0;
@@ -43,43 +45,49 @@ void setup() {
   }
 
   pinMode(BUTTON_PIN, INPUT_PULLUP);
-  
-  drawline();
-  display.clearDisplay();  
+
+  loading();
+  delay(300);
+  display.clearDisplay();
   display.setTextSize(1);
   display.setTextColor(SSD1306_WHITE);
-  display.setCursor(12, 4);
+  display.setCursor(12, 15);
   display.println(F("PG Gen. Vl. Zaimov"));
-  display.setCursor(0, 13);
-  display.print("---------------------");
-  display.setCursor(50, 22);
+  display.setTextSize(2);
+  display.setCursor(0, 25);
+  display.print("----------");
+  display.setTextSize(1);
+  display.setCursor(50, 40);
   display.println(F("Sopot"));
   display.display();
   delay(3000);
-  
- drawrect();
- fillrect();
-  
+
+  drawRect();
+  fillRect();
+
   display.clearDisplay();
   display.setTextSize(1);
   display.setCursor(40, 4);
   display.println(F("Made by:"));
+  display.setTextSize(2);
   display.setCursor(0, 13);
-  display.print("---------------------");
-  display.setCursor(14, 22);
-  display.println(F("Gabriela Vasileva"));
+  display.print("----------");
+  display.setCursor(14, 25);
+  display.println(F("Gabriela"));
+  display.setCursor(14, 45);
+  display.println(F("Vasileva"));
   display.display();
   delay(3000);
 }
 
 void loop() {
   bool currentButtonState = digitalRead(BUTTON_PIN);
-  
+
   if (lastButtonState == HIGH && currentButtonState == LOW) {
     buttonPressed = true;
-    buttonPressTime = millis(); 
+    buttonPressTime = millis();
   }
-  lastButtonState = currentButtonState; 
+  lastButtonState = currentButtonState;
 
   display.clearDisplay();
 
@@ -95,16 +103,21 @@ void loop() {
         display.setCursor(0, 0);
         display.println(F("Sensor Error!"));
       } else {
+        display.setTextSize(1);
+        display.setCursor(0, 10);
+        display.print(F("Temp: "));
         display.setTextSize(2);
-        display.setCursor(0, 0);
-        display.print(F("T:"));
-        display.print(temperature);
+        display.print(temperature, 2);
         display.print((char)247);
         display.print(F("C"));
 
-        display.setCursor(0, 16);
-        display.print(F("H:"));
-        display.print(humidity);
+        display.setCursor(0, 25);
+        display.print("----------");
+        display.setTextSize(1);
+        display.setCursor(0, 40);
+        display.print(F("Hum: "));
+        display.setTextSize(2);
+        display.print(humidity, 2);
         display.print(F("%"));
       }
     }
@@ -123,16 +136,12 @@ void loop() {
     timeString += ':';
     if (now.second() < 10) timeString += '0';
     timeString += String(now.second());
-
-    display.setCursor(15, 0);
+    display.setTextSize(2);
+    display.setCursor(15, 10);
     display.print(timeString);
-
-    display.setTextSize(1);
-    display.setCursor(0, 13);
-    display.print("---------------------");
-
-    display.setCursor(0, 20);
-    display.print(F("Date: "));
+    display.setCursor(0, 25);
+    display.print("----------");
+    display.setCursor(0, 40);
     if (now.day() < 10) display.print('0');
     display.print(now.day());
     display.print('/');
@@ -142,59 +151,42 @@ void loop() {
     display.print(now.year());
   }
   display.display();
-  delay(100); 
+  delay(100);
 }
 
-void drawline() {
-  int16_t i;
-
-  display.clearDisplay(); 
-
-  for(i=0; i<display.width(); i+=4) {
-    display.drawLine(0, 0, i, display.height()-1, SSD1306_WHITE);
-    display.display(); 
-    delay(1);
-  }
-  for(i=0; i<display.height(); i+=4) {
-    display.drawLine(0, 0, display.width()-1, i, SSD1306_WHITE);
+void loading(void) {
+  for (int i = 14; i <= 100; i++)
+  { display.clearDisplay();
+    display.drawRoundRect(12, 20, 104, 20, 10 , SSD1306_WHITE);
+    display.fillRoundRect(14, 23, i, 14, 10, SSD1306_WHITE);
+    display.setTextSize(1);
+    display.setTextColor(SSD1306_WHITE);
+    display.setCursor(30, 50);
+    display.print("Loading ");
+    display.print(i);
+    display.print("%");
     display.display();
-    delay(1);
   }
-  delay(250);
-  display.clearDisplay();
-
-  for(i=0; i<display.width(); i+=4) {
-    display.drawLine(0, display.height()-1, i, 0, SSD1306_WHITE);
-    display.display();
-    delay(1);
-  }
-  for(i=display.height()-1; i>=0; i-=4) {
-    display.drawLine(0, display.height()-1, display.width()-1, i, SSD1306_WHITE);
-    display.display();
-    delay(1);
-  }
-  display.clearDisplay();
-  delay(1000); 
 }
 
-void drawrect(void) {
+void drawRect(void) {
   display.clearDisplay();
 
-  for(int16_t i=0; i<display.height()/2; i+=2) {
-    display.drawRect(i, i, display.width()-2*i, display.height()-2*i, SSD1306_WHITE);
-    display.display(); 
-    delay(1);
-  }
-  delay(1000);
-}
-
-void fillrect(void) {
-  display.clearDisplay();
-
-  for(int16_t i=0; i<display.height()/2; i+=3) {
-    display.fillRect(i, i, display.width()-i*2, display.height()-i*2, SSD1306_INVERSE);
+  for (int16_t i = 0; i < display.height() / 2; i += 2) {
+    display.drawRect(i, i, display.width() - 2 * i, display.height() - 2 * i, SSD1306_WHITE);
     display.display();
     delay(1);
   }
-  delay(1000);
+  delay(500);
+}
+
+void fillRect(void) {
+  display.clearDisplay();
+
+  for (int16_t i = 0; i < display.height() / 2; i += 3) {
+    display.fillRect(i, i, display.width() - i * 2, display.height() - i * 2, SSD1306_INVERSE);
+    display.display();
+    delay(1);
+  }
+  delay(500);
 }
